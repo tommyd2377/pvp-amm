@@ -117,17 +117,17 @@ describe("pvp-amm", () => {
     );
     console.log("Created Short GD Token ATA: " + shortgd.toBase58());
 
-    const longMintPublicKey = new PublicKey(longusdc);
+    const longUSDCPublicKey = new PublicKey(longusdc);
     let tx = await Spl.mintTo(
         program.provider.connection,
         longKeypair,
         usdcMintPublicKey,
-        longMintPublicKey,
+        longUSDCPublicKey,
         usdcKeypair,
         10000,
     );
     const usdcMintedToLong = await program.provider.connection.getTokenAccountBalance(longusdc);
-    console.log("Minted " +  + usdcMintedToLong.value.amount + " USDC to Long");
+    console.log("Minted " + usdcMintedToLong.value.amount + " USDC to Long");
 
     const shortMintPublicKey = new PublicKey(shortusdc);
     let tx1 = await Spl.mintTo(
@@ -139,21 +139,28 @@ describe("pvp-amm", () => {
         10000,
     );
     const usdcMintedToShort = await program.provider.connection.getTokenAccountBalance(shortusdc);
-    console.log("Minted " +  + usdcMintedToShort.value.amount + " USDC to Short");
+    console.log("Minted " + usdcMintedToShort.value.amount + " USDC to Short");
 
   });
 
   it("Can create a new pool", async () => {
     // Add your test here.   
     let pool = anchor.web3.Keypair.generate();
-    const tx = await program.rpc.createPool(new anchor.BN(100), {
+    const tx = await program.rpc.createPool(new anchor.BN(1000), new anchor.BN(2000), {
         accounts: {
             pool: pool.publicKey,
-            payer: poolKeypair.publicKey,
+            longPayer: longKeypair.publicKey,
+            shortPayer: shortKeypair.publicKey,
+            from: longusdc,
+            from2: shortusdc,
+            to: poolusdc,
+            tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
-        signers: [poolKeypair, pool],
+        signers: [pool, longKeypair, shortKeypair],
     });
+    const longUSDCPool = await program.provider.connection.getTokenAccountBalance(poolusdc);
+    console.log("Long sent " + longUSDCPool.value.amount + " USDC to Pool");
     console.log("Your transaction signature", tx);
   });
 });
