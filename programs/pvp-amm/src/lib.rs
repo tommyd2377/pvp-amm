@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-//use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer, MintTo};
+// use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer, MintTo};
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -9,28 +9,52 @@ pub mod pvp_amm {
 
     pub fn create_pool(ctx: Context<CreatePool>, amount: u64) -> Result<()> {
         let poolData: &mut Account<Pool> = &mut ctx.accounts.pool;
-        let author: &Signer = &ctx.accounts.author;
+        let payer: &Signer = &ctx.accounts.payer;
         let clock: Clock = Clock::get().unwrap();
 
-        poolData.author = *author.key;
+        poolData.payer = *payer.key;
         poolData.timestamp = clock.unix_timestamp;
         poolData.amount = amount;
+
+        // let cpi_accounts = MintTo {
+        //     from: ctx.accounts.from.to_account_info(),
+        //     to: ctx.accounts.to.to_account_info(),
+        //     authority: ctx.accounts.author.to_account_info(),
+        // };
+        // let cpi_program = ctx.accounts.token_program.to_account_info();
+        // let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+
+        // token::mint_to(cpi_ctx, amount)?;
+
+        // let cpi_accounts = Transfer {
+        //     from: ctx.accounts.from.to_account_info(),
+        //     to: ctx.accounts.to.to_account_info(),
+        //     authority: ctx.accounts.author.to_account_info(),
+        // };
+        // let cpi_program = ctx.accounts.token_program.to_account_info();
+        // let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+
+        // token::transfer(cpi_ctx, amount)?;
         Ok(())
     }
 }
 
 #[derive(Accounts)]
 pub struct CreatePool<'info> {
-    #[account(init, payer = author, space = Pool::LEN)]
+    #[account(init, payer = payer, space = Pool::LEN)]
     pub pool: Account<'info, Pool>,
     #[account(mut)]
-    pub author: Signer<'info>,
+    pub payer: Signer<'info>,
+    // pub from: Account<'info, TokenAccount>,
+    // #[account(mut)]
+    // pub to: Account<'info, TokenAccount>,
+    // pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 #[account]
 pub struct Pool {
-    pub author: Pubkey,
+    pub payer: Pubkey,
     pub timestamp: i64,
     pub amount: u64,
 }

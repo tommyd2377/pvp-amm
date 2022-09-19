@@ -115,7 +115,31 @@ describe("pvp-amm", () => {
         gdTokenMintPublicKey,
         shortKeypair.publicKey
     );
-    console.log("Created Long USDC ATA: " + shortgd.toBase58());
+    console.log("Created Short GD Token ATA: " + shortgd.toBase58());
+
+    const longMintPublicKey = new PublicKey(longusdc);
+    let tx = await Spl.mintTo(
+        program.provider.connection,
+        longKeypair,
+        usdcMintPublicKey,
+        longMintPublicKey,
+        usdcKeypair,
+        10000,
+    );
+    const usdcMintedToLong = await program.provider.connection.getTokenAccountBalance(longusdc);
+    console.log("Minted " +  + usdcMintedToLong.value.amount + " USDC to Long");
+
+    const shortMintPublicKey = new PublicKey(shortusdc);
+    let tx1 = await Spl.mintTo(
+        program.provider.connection,
+        shortKeypair,
+        usdcMintPublicKey,
+        shortMintPublicKey,
+        usdcKeypair,
+        10000,
+    );
+    const usdcMintedToShort = await program.provider.connection.getTokenAccountBalance(shortusdc);
+    console.log("Minted " +  + usdcMintedToShort.value.amount + " USDC to Short");
 
   });
 
@@ -125,10 +149,10 @@ describe("pvp-amm", () => {
     const tx = await program.rpc.createPool(new anchor.BN(100), {
         accounts: {
             pool: pool.publicKey,
-            author: program.provider.wallet.publicKey,
+            payer: poolKeypair.publicKey,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
-        signers: [pool],
+        signers: [poolKeypair, pool],
     });
     console.log("Your transaction signature", tx);
   });
