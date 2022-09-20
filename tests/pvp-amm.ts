@@ -27,6 +27,7 @@ describe("pvp-amm", () => {
   let shortusdc = null;
   let longgd = null;
   let shortgd = null;
+  let pool = null;
 
   it("Is initialized!", async () => {
     usdcKeypair = await anchor.web3.Keypair.generate();
@@ -145,22 +146,63 @@ describe("pvp-amm", () => {
 
   it("Can create a new pool", async () => {
     // Add your test here.   
-    let pool = anchor.web3.Keypair.generate();
-    const tx = await program.rpc.createPool(new anchor.BN(1000), new anchor.BN(2000), {
+    pool = anchor.web3.Keypair.generate();
+    const tx = await program.rpc.createPool(
+        new anchor.BN(1000), 
+        new anchor.BN(2000), 
+        new anchor.BN(10000), 
+        new anchor.BN(20000), 
+        new anchor.BN(100), {
         accounts: {
             pool: pool.publicKey,
             longPayer: longKeypair.publicKey,
             shortPayer: shortKeypair.publicKey,
+            mint: gdTokenMint,
+            authority: gdTokenKeypair.publicKey,
             from: longusdc,
             from2: shortusdc,
-            to: poolusdc,
+            // transferTo: poolusdc,
+            mintTo: poolgd,
             tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
-        signers: [pool, longKeypair, shortKeypair],
+        signers: [pool, longKeypair, shortKeypair, gdTokenKeypair],
     });
-    const longUSDCPool = await program.provider.connection.getTokenAccountBalance(poolusdc);
-    console.log("Long sent " + longUSDCPool.value.amount + " USDC to Pool");
-    console.log("Your transaction signature", tx);
+    
+    const USDCPool = await program.provider.connection.getTokenAccountBalance(poolusdc);
+    console.log(USDCPool.value.amount + " USDC sent to Pool");
+
+    const gdPool = await program.provider.connection.getTokenAccountBalance(poolgd);
+    console.log(gdPool.value.amount + " GD minted to Pool");
+
+    const poolAccount = await program.account.pool.fetch(pool.publicKey);
+    console.log("Created Pool Account Timestamp: " + poolAccount.timestamp);
+    console.log("Created Pool Account Asset Price: " + poolAccount.assetPrice);
+    console.log("Created Pool Account Long: " + poolAccount.longPayer);
+    console.log("Created Pool Account Short: " + poolAccount.shortPayer);
+    console.log("Created Pool Account Long Collateral: " + poolAccount.longCol);
+    console.log("Created Pool Account Short Collateral: " + poolAccount.shortCol);
+    console.log("Created Pool Account Long Position: " + poolAccount.longPos);
+    console.log("Created Pool Account Short Position: " + poolAccount.shortPos);
+    
+    console.log("Pool Account transaction signature", tx);
+  });
+
+  it("Can close a pool", async () => {
+    // Add your test here.   
+    const finalPool = anchor.web3.Keypair.generate();
+    const tx = await program.rpc.closePool(new anchor.BN(1000) {
+        accounts: {
+            finalPool: finalPool.publicKey,
+            longPayer: longKeypair.publicKey,
+            shortPayer: shortKeypair.publicKey,
+            poolAccount: pool.publicKey,
+            tokenProgram: Spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        },
+        signers: [finalPool, longKeypair, shortKeypair],
+    });
+    
+    console.log("Pool Account transaction signature", tx);
   });
 });
