@@ -189,20 +189,20 @@ describe("pvp-amm", () => {
   });
 
   it("Can close a pool", async () => {
-    // Add your test here.   
-    const finalPool = anchor.web3.Keypair.generate();
-    const tx = await program.rpc.closePool(new anchor.BN(1000) {
+    // Add your test here.
+    const tx = await program.rpc.closePool(new anchor.BN(105), {
         accounts: {
-            finalPool: finalPool.publicKey,
+            poolAccount: pool.publicKey,
             longPayer: longKeypair.publicKey,
             shortPayer: shortKeypair.publicKey,
-            poolAccount: pool.publicKey,
             tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
-        signers: [finalPool, longKeypair, shortKeypair],
+        signers: [longKeypair, shortKeypair],
     });
     
+    const poolAccount = await program.account.pool.fetch(pool.publicKey);
+    console.log(poolAccount.assetPrice.toString());
     console.log("Pool Account transaction signature", tx);
   });
 });
