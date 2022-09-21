@@ -73,8 +73,13 @@ pub mod pvp_amm {
         let col_s = pool.short_col;
         let op = pool.asset_price;
 
-        let long_dist: f32 = (((final_price/op)-1.0) / (col_l as f32 / pos_l as f32)) * col_l as f32;
-        let short_dist: f32 = col_s as f32 / ((col_s as f32 / pos_s as f32) / ((final_price/op)-1.0)) as f32;
+        let mut long_dist: f32 = (((final_price/op)-1.0) / (col_l as f32 / pos_l as f32)) * col_l as f32;
+        let mut short_dist: f32 = col_s as f32 / ((col_s as f32 / pos_s as f32) / ((final_price/op)-1.0)) as f32;
+
+        if final_price < op {
+            long_dist = long_dist * -1.0;
+            short_dist = short_dist * -1.0;
+        }
         
         pool.long_dist = long_dist;
         pool.short_dist = short_dist;

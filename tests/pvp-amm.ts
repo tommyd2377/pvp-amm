@@ -187,9 +187,47 @@ describe("pvp-amm", () => {
     console.log("Create Pool Account transaction signature", tx);
   });
 
-  it("Can close a pool", async () => {
+  it("Can close a pool with asset price increase", async () => {
     // Add your test here.
     const tx = await program.rpc.closePool(new anchor.BN(105), {
+        accounts: {
+            poolAccount: pool.publicKey,
+            longPayer: longKeypair.publicKey,
+            shortPayer: shortKeypair.publicKey,
+            transferFrom: poolgd,
+            authority: poolKeypair.publicKey,
+            transferTo: longgd,
+            transferTo2: shortgd,
+            tokenProgram: Spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        },
+        signers: [longKeypair, shortKeypair, poolKeypair],
+    });
+
+    const longbal = await program.provider.connection.getTokenAccountBalance(longgd);
+    console.log(longbal.value.amount + " GD transfered to Long");
+    const shortbal = await program.provider.connection.getTokenAccountBalance(shortgd);
+    console.log(shortbal.value.amount + " GD transfered to Short");
+    
+    const poolAccount = await program.account.pool.fetch(pool.publicKey);
+    console.log("Closed Pool Account Timestamp Created: " + poolAccount.timestamp);
+    console.log("Closed Pool Account Asset Price: " + poolAccount.assetPrice);
+    console.log("Closed Pool Account Final Price: " + poolAccount.finalPrice);
+    console.log("Closed Pool Account Long: " + poolAccount.longPayer);
+    console.log("Closed Pool Account Short: " + poolAccount.shortPayer);
+    console.log("Closed Pool Account Long Collateral: " + poolAccount.longCol);
+    console.log("Closed Pool Account Short Collateral: " + poolAccount.shortCol);
+    console.log("Closed Pool Account Long Position: " + poolAccount.longPos);
+    console.log("Closed Pool Account Short Position: " + poolAccount.shortPos);
+    console.log("Closed Pool Account Long GD Token Distribution: " + poolAccount.longDist);
+    console.log("Closed Pool Account Short GD Token Distribution: " + poolAccount.shortDist);
+    console.log("Closed Pool Account Timestamp Closed: " + poolAccount.timestampClose);
+    console.log("Close Pool Account transaction signature", tx);
+  });
+
+  it("Can close a pool with asset price decrease", async () => {
+    // Add your test here.
+    const tx = await program.rpc.closePool(new anchor.BN(95), {
         accounts: {
             poolAccount: pool.publicKey,
             longPayer: longKeypair.publicKey,
