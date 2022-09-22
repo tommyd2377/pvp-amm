@@ -27,7 +27,7 @@ describe("pvp-amm", () => {
   let shortusdc = null;
   let longgd = null;
   let shortgd = null;
-  let pool = null;
+  let trade = null;
 
   it("Is initialized!", async () => {
     usdcKeypair = await anchor.web3.Keypair.generate();
@@ -144,17 +144,17 @@ describe("pvp-amm", () => {
 
   });
 
-  it("Can create a new pool", async () => {
+  it("Can create a new PvP trade", async () => {
     // Add your test here.   
-    pool = anchor.web3.Keypair.generate();
-    const tx = await program.rpc.createPool(
+    trade = anchor.web3.Keypair.generate();
+    const tx = await program.rpc.createTrade(
         new anchor.BN(1000), 
         new anchor.BN(2000), 
         new anchor.BN(10000), 
         new anchor.BN(20000), 
         new anchor.BN(100), {
         accounts: {
-            pool: pool.publicKey,
+            trade: trade.publicKey,
             longPayer: longKeypair.publicKey,
             shortPayer: shortKeypair.publicKey,
             mint: gdTokenMint,
@@ -166,7 +166,7 @@ describe("pvp-amm", () => {
             tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
-        signers: [pool, longKeypair, shortKeypair, gdTokenKeypair],
+        signers: [trade, longKeypair, shortKeypair, gdTokenKeypair],
     });
     
     const USDCPool = await program.provider.connection.getTokenAccountBalance(poolusdc);
@@ -175,29 +175,34 @@ describe("pvp-amm", () => {
     const gdPool = await program.provider.connection.getTokenAccountBalance(poolgd);
     console.log(gdPool.value.amount + " GD minted to Pool");
 
-    const poolAccount = await program.account.pool.fetch(pool.publicKey);
-    console.log("Created Pool Account Timestamp: " + poolAccount.timestamp);
-    console.log("Created Pool Account Asset Price: " + poolAccount.assetPrice);
-    console.log("Created Pool Account Long: " + poolAccount.longPayer);
-    console.log("Created Pool Account Short: " + poolAccount.shortPayer);
-    console.log("Created Pool Account Long Collateral: " + poolAccount.longCol);
-    console.log("Created Pool Account Short Collateral: " + poolAccount.shortCol);
-    console.log("Created Pool Account Long Position: " + poolAccount.longPos);
-    console.log("Created Pool Account Short Position: " + poolAccount.shortPos);
-    console.log("Create Pool Account transaction signature", tx);
+    const tradeAccount = await program.account.trade.fetch(trade.publicKey);
+    console.log("Trade Account Timestamp: " + tradeAccount.timestamp);
+    console.log("Trade Account Asset Price: " + tradeAccount.assetPrice);
+    console.log("Trade Account Long: " + tradeAccount.longPayer);
+    console.log("Trade Account Short: " + tradeAccount.shortPayer);
+    console.log("Trade Account Long Collateral: " + tradeAccount.longCol);
+    console.log("Trade Account Short Collateral: " + tradeAccount.shortCol);
+    console.log("Trade Account Long Position: " + tradeAccount.longPos);
+    console.log("Trade Account Short Position: " + tradeAccount.shortPos);
+    console.log("Trade Account Long is Open: " + tradeAccount.longOpen);
+    console.log("Trade Account Short is Open: " + tradeAccount.shortOpen);
+    console.log("Trade Account transaction signature: ", tx);
   });
 
-  it("Can close a pool with asset price increase", async () => {
+  it("Can close a PvP trade with asset price increase", async () => {
     // Add your test here.
-    const tx = await program.rpc.closePool(new anchor.BN(105), {
+    const tx = await program.rpc.closeTrade(new anchor.BN(105), {
         accounts: {
-            poolAccount: pool.publicKey,
+            tradeAccount: trade.publicKey,
             longPayer: longKeypair.publicKey,
             shortPayer: shortKeypair.publicKey,
             transferFrom: poolgd,
             authority: poolKeypair.publicKey,
             transferTo: longgd,
             transferTo2: shortgd,
+            gdMint: gdTokenMint,
+            mintTo: poolgd,
+            authority1: gdTokenKeypair.publicKey,
             tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
@@ -209,33 +214,82 @@ describe("pvp-amm", () => {
     const shortbal = await program.provider.connection.getTokenAccountBalance(shortgd);
     console.log(shortbal.value.amount + " GD transfered to Short");
     
-    const poolAccount = await program.account.pool.fetch(pool.publicKey);
-    console.log("Closed Pool Account Timestamp Created: " + poolAccount.timestamp);
-    console.log("Closed Pool Account Asset Price: " + poolAccount.assetPrice);
-    console.log("Closed Pool Account Final Price: " + poolAccount.finalPrice);
-    console.log("Closed Pool Account Long: " + poolAccount.longPayer);
-    console.log("Closed Pool Account Short: " + poolAccount.shortPayer);
-    console.log("Closed Pool Account Long Collateral: " + poolAccount.longCol);
-    console.log("Closed Pool Account Short Collateral: " + poolAccount.shortCol);
-    console.log("Closed Pool Account Long Position: " + poolAccount.longPos);
-    console.log("Closed Pool Account Short Position: " + poolAccount.shortPos);
-    console.log("Closed Pool Account Long GD Token Distribution: " + poolAccount.longDist);
-    console.log("Closed Pool Account Short GD Token Distribution: " + poolAccount.shortDist);
-    console.log("Closed Pool Account Timestamp Closed: " + poolAccount.timestampClose);
-    console.log("Close Pool Account transaction signature", tx);
+    const tradeAccount = await program.account.trade.fetch(trade.publicKey);
+    console.log("Trade Account Timestamp Created: " + tradeAccount.timestamp);
+    console.log("Trade Account Asset Price: " + tradeAccount.assetPrice);
+    console.log("Trade Account Final Price: " + tradeAccount.finalPrice);
+    console.log("Trade Account Long: " + tradeAccount.longPayer);
+    console.log("Trade Account Short: " + tradeAccount.shortPayer);
+    console.log("Trade Account Long Collateral: " + tradeAccount.longCol);
+    console.log("Trade Account Short Collateral: " + tradeAccount.shortCol);
+    console.log("Trade Account Long Position: " + tradeAccount.longPos);
+    console.log("Trade Account Short Position: " + tradeAccount.shortPos);
+    console.log("Trade Account Long GD Token Distribution: " + tradeAccount.longDist);
+    console.log("Trade Account Short GD Token Distribution: " + tradeAccount.shortDist);
+    console.log("Trade Account Long is Open: " + tradeAccount.longOpen);
+    console.log("Trade Account Short is Open: " + tradeAccount.shortOpen);
+    console.log("Trade Account Timestamp Closed: " + tradeAccount.timestampClose);
+    console.log("Trade Account transaction signature: ", tx);
   });
 
-  it("Can close a pool with asset price decrease", async () => {
-    // Add your test here.
-    const tx = await program.rpc.closePool(new anchor.BN(95), {
+  it("Can create a new PvP trade", async () => {
+    // Add your test here.   
+    trade = anchor.web3.Keypair.generate();
+    const tx = await program.rpc.createTrade(
+        new anchor.BN(1000), 
+        new anchor.BN(2000), 
+        new anchor.BN(10000), 
+        new anchor.BN(20000), 
+        new anchor.BN(100), {
         accounts: {
-            poolAccount: pool.publicKey,
+            trade: trade.publicKey,
+            longPayer: longKeypair.publicKey,
+            shortPayer: shortKeypair.publicKey,
+            mint: gdTokenMint,
+            authority: gdTokenKeypair.publicKey,
+            from: longusdc,
+            from2: shortusdc,
+            // transferTo: poolusdc,
+            mintTo: poolgd,
+            tokenProgram: Spl.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        },
+        signers: [trade, longKeypair, shortKeypair, gdTokenKeypair],
+    });
+    
+    const USDCPool = await program.provider.connection.getTokenAccountBalance(poolusdc);
+    console.log(USDCPool.value.amount + " USDC sent to Pool");
+
+    const gdPool = await program.provider.connection.getTokenAccountBalance(poolgd);
+    console.log(gdPool.value.amount + " GD minted to Pool");
+
+    const tradeAccount = await program.account.trade.fetch(trade.publicKey);
+    console.log("Trade Account Timestamp: " + tradeAccount.timestamp);
+    console.log("Trade Account Asset Price: " + tradeAccount.assetPrice);
+    console.log("Trade Account Long: " + tradeAccount.longPayer);
+    console.log("Trade Account Short: " + tradeAccount.shortPayer);
+    console.log("Trade Account Long Collateral: " + tradeAccount.longCol);
+    console.log("Trade Account Short Collateral: " + tradeAccount.shortCol);
+    console.log("Trade Account Long Position: " + tradeAccount.longPos);
+    console.log("Trade Account Short Position: " + tradeAccount.shortPos);
+    console.log("Trade Account Long is Open: " + tradeAccount.longOpen);
+    console.log("Trade Account Short is Open: " + tradeAccount.shortOpen);
+    console.log("Trade Account transaction signature: ", tx);
+  });
+
+  it("Can close a PvP trade with asset price decrease", async () => {
+    const tx = await program.rpc.closeTrade(new anchor.BN(95), {
+        accounts: {
+            tradeAccount: trade.publicKey,
             longPayer: longKeypair.publicKey,
             shortPayer: shortKeypair.publicKey,
             transferFrom: poolgd,
             authority: poolKeypair.publicKey,
             transferTo: longgd,
             transferTo2: shortgd,
+            gdMint: gdTokenMint,
+            mintTo: poolgd,
+            authority1: gdTokenKeypair.publicKey,
             tokenProgram: Spl.TOKEN_PROGRAM_ID,
             systemProgram: anchor.web3.SystemProgram.programId,
         },
@@ -247,19 +301,21 @@ describe("pvp-amm", () => {
     const shortbal = await program.provider.connection.getTokenAccountBalance(shortgd);
     console.log(shortbal.value.amount + " GD transfered to Short");
     
-    const poolAccount = await program.account.pool.fetch(pool.publicKey);
-    console.log("Closed Pool Account Timestamp Created: " + poolAccount.timestamp);
-    console.log("Closed Pool Account Asset Price: " + poolAccount.assetPrice);
-    console.log("Closed Pool Account Final Price: " + poolAccount.finalPrice);
-    console.log("Closed Pool Account Long: " + poolAccount.longPayer);
-    console.log("Closed Pool Account Short: " + poolAccount.shortPayer);
-    console.log("Closed Pool Account Long Collateral: " + poolAccount.longCol);
-    console.log("Closed Pool Account Short Collateral: " + poolAccount.shortCol);
-    console.log("Closed Pool Account Long Position: " + poolAccount.longPos);
-    console.log("Closed Pool Account Short Position: " + poolAccount.shortPos);
-    console.log("Closed Pool Account Long GD Token Distribution: " + poolAccount.longDist);
-    console.log("Closed Pool Account Short GD Token Distribution: " + poolAccount.shortDist);
-    console.log("Closed Pool Account Timestamp Closed: " + poolAccount.timestampClose);
-    console.log("Close Pool Account transaction signature", tx);
+    const tradeAccount = await program.account.trade.fetch(trade.publicKey);
+    console.log("Trade Account Timestamp Created: " + tradeAccount.timestamp);
+    console.log("Trade Account Asset Price: " + tradeAccount.assetPrice);
+    console.log("Trade Account Final Price: " + tradeAccount.finalPrice);
+    console.log("Trade Account Long: " + tradeAccount.longPayer);
+    console.log("Trade Account Short: " + tradeAccount.shortPayer);
+    console.log("Trade Account Long Collateral: " + tradeAccount.longCol);
+    console.log("Trade Account Short Collateral: " + tradeAccount.shortCol);
+    console.log("Trade Account Long Position: " + tradeAccount.longPos);
+    console.log("Trade Account Short Position: " + tradeAccount.shortPos);
+    console.log("Trade Account Long GD Token Distribution: " + tradeAccount.longDist);
+    console.log("Trade Account Short GD Token Distribution: " + tradeAccount.shortDist);
+    console.log("Trade Account Long is Open: " + tradeAccount.longOpen);
+    console.log("Trade Account Short is Open: " + tradeAccount.shortOpen);
+    console.log("Trade Account Timestamp Closed: " + tradeAccount.timestampClose);
+    console.log("Trade Account transaction signature: ", tx);
   });
 });
